@@ -1,0 +1,73 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Build the web app
+        run: |
+          npm ci
+          npm run build
+
+      - name: Copy it into the Android project
+        run: npx cap sync android
+
+      # Optional but recommended: with these two repo secrets set, every APK is
+      # signed with the same key, so updates install over the old version.
+      - name: Load the signing key from secrets
+        working-directory: android/app
+        env:
+          KEYSTORE_B64: ${{ secrets.HOMEBOARD_KEYSTORE_BASE64 }}
+          KEY_PASSWORD: ${{ secrets.HOMEBOARD_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ] && [ -n "$KEY_PASSWORD" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > homeboard.keystore
+            printf 'storeFile=homeboard.keystore\nstorePassword=%s\nkeyAlias=homeboard\nkeyPassword=%s\n' "$KEY_PASSWORD" "$KEY_PASSWORD" > signing.properties
+            echo "Signing with the Home Board key."
+          else
+            echo "::warning::No signing secrets set. This APK uses a throwaway key, so to update later you must uninstall first (which clears the app's data)."
+          fi
+
+      - name: Build the APK
+        working-directory: android
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+          cp app/build/outputs/apk/release/app-release.apk ../HomeBoard-1.0.${{ github.run_number }}.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HomeBoard-apk
+          path: HomeBoard-*.apk
+
+      - name: Publish as a release (direct download link)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Home Board 1.0.${{ github.run_number }}
+          body: Open this page on the tablet and tap the APK to install.
+          files: HomeBoard-*.apk
+          make_latest: true

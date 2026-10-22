@@ -1,0 +1,104 @@
+export type ThemeMode = 'auto' | 'light' | 'dark';
+export type Screen = 'home' | 'kids' | 'menu' | 'alarms' | 'settings';
+
+export type WidgetType =
+  | 'clock'
+  | 'weather'
+  | 'alarm'
+  | 'menu'
+  | 'kids'
+  | 'photo'
+  | 'chores'
+  | 'note'
+  | 'calendar'
+  | 'countdown'
+  | 'shopping';
+
+export interface WidgetConfig {
+  /** photo widget: ids of photos stored on the tablet */
+  photoIds?: string[];
+  /** photo widget: seconds between photos */
+  interval?: number;
+  /** note widget */
+  text?: string;
+  author?: string;
+  /** countdown widget */
+  label?: string;
+  date?: string;
+}
+
+export interface Widget {
+  id: string;
+  type: WidgetType;
+  w: number;
+  h: number;
+  config?: WidgetConfig;
+}
+
+export interface Chore {
+  id: string;
+  label: string;
+  who: string;
+  /** date key (YYYY-MM-DD) of the day it was ticked off */
+  doneOn?: string;
+}
+
+export interface ShopItem {
+  id: string;
+  label: string;
+  done: boolean;
+}
+
+export interface Alarm {
+  id: string;
+  /** HH:MM, 24-hour */
+  time: string;
+  label: string;
+  /** JS weekday numbers, 0 = Sunday */
+  days: number[];
+  who: string;
+  on: boolean;
+  note: string;
+}
+
+export interface RoutineItem {
+  id: string;
+  time: string;
+  label: string;
+}
+
+export interface Reminder {
+  id: string;
+  label: string;
+  detail: string;
+}
+
+export interface CalEvent {
+  id: string;
+  date: string;
+  time: string;
+  title: string;
+}
+
+export type Meal = 'breakfast' | 'lunch' | 'snack' | 'dinner';
+export const MEALS: Meal[] = ['breakfast', 'lunch', 'snack', 'dinner'];
+
+export interface Location {
+  name: string;
+  lat: number;
+  lon: number;
+}
+
+export interface Settings {
+  theme: ThemeMode;
+  dayStart: string;
+  nightStart: string;
+  location: Location | null;
+  members: string[];
+  kidName: string;
+  starGoal: number;
+  reward: string;
+  mealTimes: Record<Meal, string>;
+  keepAwake: boolean;
+  homeTimeoutMin: number;
+}
