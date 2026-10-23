@@ -4,6 +4,8 @@ import type {
   Alarm,
   CalEvent,
   Chore,
+  DayPlan,
+  Dish,
   Meal,
   Reminder,
   RoutineItem,
@@ -32,8 +34,12 @@ export interface AppState {
   routineDone: Record<string, string[]>;
   reminders: Reminder[];
   events: CalEvent[];
-  /** 7 days (Mon..Sun) × 4 meals */
-  menu: Record<Meal, string>[];
+  /** the dishes the family cooks, one list per meal */
+  dishLists: Record<Meal, Dish[]>;
+  /** date key (YYYY-MM-DD) -> what's planned that day */
+  plan: Record<string, DayPlan>;
+  /** names of dishes taken off a list, so past plans still read correctly */
+  removedDishes: Record<string, string>;
 
   // ---- not persisted ----
   screen: Screen;
@@ -48,6 +54,65 @@ const inDays = (n: number) => {
   d.setDate(d.getDate() + n);
   return dateKey(d);
 };
+
+
+const SEED_LISTS: Record<Meal, string[]> = {
+  breakfast: ['Idli, sambar', 'Masala dosa', 'Ven pongal', 'Rava upma', 'Poori, masala', 'Pesarattu', 'Appam, stew', 'Coconut chutney'],
+  lunch: ['Sambar rice', 'Rice, rasam', 'Curd rice', 'Lemon rice', 'Veg biryani', 'Kootu', 'Beans poriyal', 'Bisi bele bath', 'Dal tadka'],
+  snack: ['Sundal', 'Onion bajji', 'Murukku', 'Fruit bowl', 'Masala tea'],
+  dinner: ['Chapati', 'Paneer butter masala', 'Dal tadka', 'Veg pulao', 'Idiyappam, kurma', 'Parotta, kurma', 'Dosa, chutney', 'Idli, sambar'],
+};
+
+/** Starting dish lists, plus this week planned up to today so the board isn't empty. */
+function seedMenu(): { dishLists: Record<Meal, Dish[]>; plan: Record<string, DayPlan> } {
+  const dishLists = Object.fromEntries(
+    (Object.keys(SEED_LISTS) as Meal[]).map((m) => [m, SEED_LISTS[m].map((name) => ({ id: uid(), name }))]),
+  ) as Record<Meal, Dish[]>;
+  const plan: Record<string, DayPlan> = {};
+  const monday = new Date();
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  const pick = (m: Meal, i: number) => dishLists[m][i % dishLists[m].length].id;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    plan[dateKey(d)] = {
+      breakfast: [pick('breakfast', i)],
+      lunch: [pick('lunch', i)],
+      snack: [pick('snack', i)],
+      dinner: [pick('dinner', i)],
+    };
+  }
+  return { dishLists, plan };
+}
+
+/** Old versions kept one repeating week of free text; turn it into dish lists + this week's plan. */
+function migrateOldMenu(old: Record<Meal, string>[]): { dishLists: Record<Meal, Dish[]>; plan: Record<string, DayPlan> } {
+  const dishLists = { breakfast: [], lunch: [], snack: [], dinner: [] } as Record<Meal, Dish[]>;
+  const idFor = (m: Meal, name: string) => {
+    const n = name.trim();
+    if (!n) return null;
+    let d = dishLists[m].find((x) => x.name.toLowerCase() === n.toLowerCase());
+    if (!d) {
+      d = { id: uid(), name: n };
+      dishLists[m].push(d);
+    }
+    return d.id;
+  };
+  const plan: Record<string, DayPlan> = {};
+  const monday = new Date();
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  old.forEach((day, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const entry: DayPlan = {};
+    (['breakfast', 'lunch', 'snack', 'dinner'] as Meal[]).forEach((m) => {
+      const id = idFor(m, day?.[m] ?? '');
+      if (id) entry[m] = [id];
+    });
+    plan[dateKey(d)] = entry;
+  });
+  return { dishLists, plan };
+}
 
 export const defaultState = (): Omit<AppState, 'screen' | 'ringing' | 'snoozes' | 'editing'> => ({
   settings: {
@@ -114,15 +179,8 @@ export const defaultState = (): Omit<AppState, 'screen' | 'ringing' | 'snoozes' 
     { id: uid(), date: today, time: '17:00', title: 'Grocery delivery' },
     { id: uid(), date: inDays(2), time: '10:00', title: 'Return library books' },
   ],
-  menu: [
-    { breakfast: 'Ven pongal', lunch: 'Sambar rice', snack: 'Murukku', dinner: 'Chapati, dal' },
-    { breakfast: 'Masala dosa', lunch: 'Curd rice', snack: 'Banana', dinner: 'Veg pulao' },
-    { breakfast: 'Rava upma', lunch: 'Lemon rice', snack: 'Sundal', dinner: 'Idiyappam, kurma' },
-    { breakfast: 'Idli, sambar', lunch: 'Rice, rasam', snack: 'Sundal, tea', dinner: 'Chapati, paneer' },
-    { breakfast: 'Poori, masala', lunch: 'Veg biryani', snack: 'Onion bajji', dinner: 'Dosa, chutney' },
-    { breakfast: 'Pesarattu', lunch: 'Rice, kootu', snack: 'Fruit bowl', dinner: 'Parotta, kurma' },
-    { breakfast: 'Appam, stew', lunch: 'Bisi bele bath', snack: 'Popcorn', dinner: 'Uthappam' },
-  ],
+  ...seedMenu(),
+  removedDishes: {},
 });
 
 export const useStore = create<AppState>()(
@@ -136,7 +194,16 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'wall-tablet-v1',
-      version: 1,
+      version: 2,
+      migrate: (persisted, version) => {
+        const st = persisted as Record<string, unknown>;
+        if (version < 2) {
+          const old = st.menu as Record<Meal, string>[] | undefined;
+          delete st.menu;
+          Object.assign(st, old ? migrateOldMenu(old) : seedMenu(), { removedDishes: {} });
+        }
+        return st as unknown as AppState;
+      },
       partialize: (s) => {
         const { screen, ringing, snoozes, editing, ...rest } = s;
         void screen; void ringing; void snoozes; void editing;
@@ -182,8 +249,60 @@ export const toggleRoutine = (id: string) => {
 export const toggleShop = (id: string) =>
   set({ shopping: get().shopping.map((s) => (s.id === id ? { ...s, done: !s.done } : s)) });
 
-export const setMenuCell = (day: number, meal: Meal, dish: string) =>
-  set({ menu: get().menu.map((d, i) => (i === day ? { ...d, [meal]: dish } : d)) });
+// ---------- menu ----------
+export const addDish = (meal: Meal, rawName: string): string | null => {
+  const name = rawName.trim().replace(/\s+/g, ' ');
+  if (!name) return null;
+  const lists = get().dishLists;
+  const found = lists[meal].find((d) => d.name.toLowerCase() === name.toLowerCase());
+  if (found) return found.id;
+  const dish = { id: uid(), name };
+  set({ dishLists: { ...lists, [meal]: [...lists[meal], dish] } });
+  return dish.id;
+};
+
+export const renameDish = (meal: Meal, id: string, rawName: string) => {
+  const name = rawName.trim().replace(/\s+/g, ' ');
+  if (!name) return;
+  const lists = get().dishLists;
+  set({ dishLists: { ...lists, [meal]: lists[meal].map((d) => (d.id === id ? { ...d, name } : d)) } });
+};
+
+/** Remove from the list; days it was already planned on keep showing it. */
+export const removeDish = (meal: Meal, id: string) => {
+  const lists = get().dishLists;
+  const name = findDishName(id) ?? '';
+  set({ dishLists: { ...lists, [meal]: lists[meal].filter((d) => d.id !== id) }, removedDishes: { ...get().removedDishes, [id]: name } });
+};
+
+export const findDishName = (id: string): string | undefined => {
+  const s = get();
+  for (const m of Object.keys(s.dishLists) as Meal[]) {
+    const d = s.dishLists[m].find((x) => x.id === id);
+    if (d) return d.name;
+  }
+  return s.removedDishes[id];
+};
+
+export const setPlan = (key: string, meal: Meal, ids: string[]) => {
+  const plan = get().plan;
+  set({ plan: { ...plan, [key]: { ...plan[key], [meal]: ids } } });
+};
+
+/** Fill the empty meals of a week from the week before. */
+export const copyWeek = (fromKeys: string[], toKeys: string[]) => {
+  const plan = { ...get().plan };
+  toKeys.forEach((k, i) => {
+    const src = plan[fromKeys[i]];
+    if (!src) return;
+    const cur: DayPlan = { ...plan[k] };
+    (Object.keys(src) as Meal[]).forEach((m) => {
+      if (!cur[m]?.length && src[m]?.length) cur[m] = [...src[m]!];
+    });
+    plan[k] = cur;
+  });
+  set({ plan });
+};
 
 export const saveAlarm = (a: Alarm) => {
   const exists = get().alarms.some((x) => x.id === a.id);

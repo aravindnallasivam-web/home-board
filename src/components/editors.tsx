@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { deletePhoto, savePhoto, usePhotoUrl } from '../services/photos';
-import { deleteAlarm, saveAlarm, setMenuCell, updateWidgetConfig, useStore } from '../store';
-import type { Alarm, CalEvent, Chore, Meal, Reminder, RoutineItem, ShopItem, Widget } from '../types';
+import { deleteAlarm, saveAlarm, updateWidgetConfig, useStore } from '../store';
+import type { Alarm, CalEvent, Chore, Reminder, RoutineItem, ShopItem, Widget } from '../types';
 import { DAY_SHORT, dateKey, uid } from '../util';
 import { Dialog, ListDialog } from './Dialog';
 import { Icon } from './Icon';
@@ -181,39 +181,6 @@ export function AlarmDialog({ alarm, onClose }: Close & { alarm: Alarm | null })
       <label className="field">
         <span>Note shown when it rings</span>
         <input className="input" placeholder="e.g. Pencil box is on the study table" value={a.note} onChange={(e) => setA({ ...a, note: e.target.value })} />
-      </label>
-    </Dialog>
-  );
-}
-
-const MEAL_LABEL: Record<Meal, string> = { breakfast: 'Breakfast', lunch: 'Lunch', snack: 'Snack', dinner: 'Dinner' };
-
-export function MenuCellDialog({ day, meal, onClose }: Close & { day: number; meal: Meal }) {
-  const current = useStore((s) => s.menu[day]?.[meal] ?? '');
-  const [dish, setDish] = useState(current);
-  const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  const save = () => {
-    setMenuCell(day, meal, dish.trim());
-    onClose();
-  };
-  return (
-    <Dialog
-      title={`${DAYS[day]} · ${MEAL_LABEL[meal]}`}
-      onClose={onClose}
-      footer={
-        <>
-          <button type="button" className="btn btn-ghost" onClick={onClose}>
-            Cancel
-          </button>
-          <button type="button" className="btn btn-primary" onClick={save}>
-            Save
-          </button>
-        </>
-      }
-    >
-      <label className="field">
-        <span>What's cooking?</span>
-        <input autoFocus className="input" value={dish} placeholder="e.g. Idli, sambar" onChange={(e) => setDish(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && save()} />
       </label>
     </Dialog>
   );

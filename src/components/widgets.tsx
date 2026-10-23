@@ -2,16 +2,16 @@ import { useEffect, useState, type ReactElement } from 'react';
 import { useNow } from '../hooks';
 import { usePhotoUrl } from '../services/photos';
 import { describe, useWeather } from '../services/weather';
-import { go, toggleChore, toggleRoutine, toggleShop, useStore } from '../store';
-import { MEALS, type Meal, type Widget, type WidgetType } from '../types';
-import { daysBetween, dateKey, fmt12, humanMinutes, minutesUntil, mondayIndex, split12, toMinutes } from '../util';
+import { findDishName, go, toggleChore, toggleRoutine, toggleShop, useStore } from '../store';
+import { MEAL_NAME, MEALS, type Meal, type Widget, type WidgetType } from '../types';
+import { daysBetween, dateKey, fmt12, humanMinutes, minutesUntil, split12, toMinutes } from '../util';
 import { Icon } from './Icon';
 
 export const WIDGET_TYPES: Record<WidgetType, { name: string; desc: string; icon: string; w: number; h: number }> = {
   clock: { name: 'Clock & date', desc: "Big time and today's date, readable across the room.", icon: 'clock', w: 3, h: 1 },
   weather: { name: 'Weather', desc: "Temperature and today's outlook.", icon: 'cloudSun', w: 1, h: 1 },
   alarm: { name: 'Next alarm', desc: 'The upcoming alarm with a countdown.', icon: 'bell', w: 2, h: 1 },
-  menu: { name: "Today's menu", desc: 'Meals for today from the weekly plan.', icon: 'menu', w: 2, h: 2 },
+  menu: { name: "Today's menu", desc: "Today's meals from the menu plan.", icon: 'menu', w: 2, h: 2 },
   kids: { name: "Kid's day", desc: "Timeline, what's on now and stars earned.", icon: 'star', w: 2, h: 2 },
   photo: { name: 'Photo frame', desc: 'One photo, or a slideshow from an album.', icon: 'photo', w: 2, h: 2 },
   chores: { name: 'Chores', desc: "Tick-off list showing who's doing what.", icon: 'list', w: 4, h: 1 },
@@ -143,7 +143,6 @@ function NextAlarm({ widget }: P) {
 }
 
 // ---------------------------------------------------------------- today's menu
-const MEAL_NAME: Record<Meal, string> = { breakfast: 'Breakfast', lunch: 'Lunch', snack: 'Snack', dinner: 'Dinner' };
 
 export function mealStates(times: Record<Meal, string>, now: Date) {
   const nowMin = now.getHours() * 60 + now.getMinutes();
@@ -153,10 +152,12 @@ export function mealStates(times: Record<Meal, string>, now: Date) {
 }
 
 function TodayMenu({ widget }: P) {
-  const menu = useStore((s) => s.menu);
+  const plan = useStore((s) => s.plan);
+  useStore((s) => s.dishLists); // re-render when a dish is renamed
   const times = useStore((s) => s.settings.mealTimes);
   const now = useNow();
-  const today = menu[mondayIndex(now)];
+  const todayPlan = plan[dateKey(now)] ?? {};
+  const dishText = (m: Meal) => (todayPlan[m] ?? []).map((id) => findDishName(id)).filter(Boolean).join(', ');
   const { past, next } = mealStates(times, now);
   const shown = widget.h >= 2 ? MEALS : [next ?? 'breakfast'];
   return (
@@ -174,7 +175,7 @@ function TodayMenu({ widget }: P) {
               {MEAL_NAME[m]} · {fmt12(times[m])}
               {m === next && widget.h >= 2 ? ' · up next' : ''}
             </span>
-            <span className="dish">{today?.[m] || '—'}</span>
+            <span className="dish">{dishText(m) || 'Not planned'}</span>
           </div>
         ))}
       </div>

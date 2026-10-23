@@ -82,6 +82,16 @@ export interface CalEvent {
 
 export type Meal = 'breakfast' | 'lunch' | 'snack' | 'dinner';
 export const MEALS: Meal[] = ['breakfast', 'lunch', 'snack', 'dinner'];
+export const MEAL_NAME: Record<Meal, string> = { breakfast: 'Breakfast', lunch: 'Lunch', snack: 'Snack', dinner: 'Dinner' };
+
+/** A dish on one of the meal lists */
+export interface Dish {
+  id: string;
+  name: string;
+}
+
+/** The dishes planned for one date: meal -> dish ids */
+export type DayPlan = Partial<Record<Meal, string[]>>;
 
 export interface Location {
   name: string;

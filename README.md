@@ -24,6 +24,7 @@ Every push to `main` builds the APK on GitHub Actions:
 
 - **Rearrange the board**: long-press anywhere on the board, or tap **Edit** in the side rail. Drag a widget onto another to move it, drag the amber corner to resize, or tap a widget for move/size/remove buttons. **Add widget** opens the gallery: clock, weather, next alarm, today's menu, kid's day, photo frame (add as many as you like), chores, family note, calendar, countdown, shopping list.
 - **Change what a widget shows**: tap its pencil.
+- **Menu**: *Dish lists* keeps a separate list for breakfast, lunch, snack and dinner. *Plan* shows real dates, a week at a time; tap a meal to pick dishes from that meal's list, or type a new dish and tap *Add* to put it on the list and the plan in one go.
 - **Theme**: the rail button cycles Auto → Light → Dark. Auto switches at the times set in Settings.
 - **Backup**: Settings › Backup saves everything except photos to a file.
 
