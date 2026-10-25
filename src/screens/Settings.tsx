@@ -162,22 +162,6 @@ export function Settings() {
             <span>Family members (comma separated)</span>
             <input className="input" value={membersText} onChange={(e) => setMembersText(e.target.value)} onBlur={saveMembers} />
           </label>
-          <label className="field">
-            <span>Kid's name</span>
-            <input className="input" value={s.kidName} onChange={(e) => updateSettings({ kidName: e.target.value })} />
-          </label>
-          <div className="field">
-            <span>Stars for a reward</span>
-            <Seg<number>
-              value={s.starGoal}
-              onChange={(starGoal) => updateSettings({ starGoal })}
-              options={[3, 4, 5, 6, 8].map((n) => ({ v: n, label: String(n) }))}
-            />
-          </div>
-          <label className="field">
-            <span>Reward</span>
-            <input className="input" value={s.reward} onChange={(e) => updateSettings({ reward: e.target.value })} />
-          </label>
         </Section>
 
         <Section title="Meal times">

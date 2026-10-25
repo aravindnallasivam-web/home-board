@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactElement } from 'react';
 import { useNow } from '../hooks';
 import { usePhotoUrl } from '../services/photos';
 import { describe, useWeather } from '../services/weather';
-import { findDishName, go, toggleChore, toggleRoutine, toggleShop, useStore } from '../store';
+import { findDishName, go, toggleChore, toggleShop, useStore } from '../store';
 import { MEAL_NAME, MEALS, type Meal, type Widget, type WidgetType } from '../types';
 import { daysBetween, dateKey, fmt12, humanMinutes, minutesUntil, split12, toMinutes } from '../util';
 import { Icon } from './Icon';
@@ -12,7 +12,6 @@ export const WIDGET_TYPES: Record<WidgetType, { name: string; desc: string; icon
   weather: { name: 'Weather', desc: "Temperature and today's outlook.", icon: 'cloudSun', w: 1, h: 1 },
   alarm: { name: 'Next alarm', desc: 'The upcoming alarm with a countdown.', icon: 'bell', w: 2, h: 1 },
   menu: { name: "Today's menu", desc: "Today's meals from the menu plan.", icon: 'menu', w: 2, h: 2 },
-  kids: { name: "Kid's day", desc: "Timeline, what's on now and stars earned.", icon: 'star', w: 2, h: 2 },
   photo: { name: 'Photo frame', desc: 'One photo, or a slideshow from an album.', icon: 'photo', w: 2, h: 2 },
   chores: { name: 'Chores', desc: "Tick-off list showing who's doing what.", icon: 'list', w: 4, h: 1 },
   note: { name: 'Family note', desc: 'A sticky note anyone can update.', icon: 'note', w: 2, h: 1 },
@@ -178,66 +177,6 @@ function TodayMenu({ widget }: P) {
             <span className="dish">{dishText(m) || 'Not planned'}</span>
           </div>
         ))}
-      </div>
-    </>
-  );
-}
-
-// ---------------------------------------------------------------- kid's day
-export function useRoutineState() {
-  const routine = useStore((s) => s.routine);
-  const doneMap = useStore((s) => s.routineDone);
-  const goal = useStore((s) => s.settings.starGoal);
-  const now = useNow();
-  const done = doneMap[dateKey(now)] ?? [];
-  const nowMin = now.getHours() * 60 + now.getMinutes();
-  let currentIdx = -1;
-  routine.forEach((r, i) => {
-    if (toMinutes(r.time) <= nowMin) currentIdx = i;
-  });
-  const stars = Math.min(goal, done.filter((id) => routine.some((r) => r.id === id)).length);
-  return { routine, done, currentIdx, stars, goal, nowMin };
-}
-
-function KidsDay({ widget }: P) {
-  const { routine, done, currentIdx, stars, goal } = useRoutineState();
-  const kidName = useStore((s) => s.settings.kidName);
-  const rows = Math.max(1, widget.h * 3 - 1);
-  const start = Math.max(0, Math.min(currentIdx - 1, routine.length - rows));
-  const shown = widget.h >= 2 ? routine.slice(start, start + rows) : routine.slice(Math.max(0, currentIdx), Math.max(0, currentIdx) + 1);
-  return (
-    <>
-      <div className="w-head">
-        <span className="w-title">{kidName}'s day</span>
-        <button type="button" className="link-btn row" style={{ gap: '0.3rem' }} onClick={() => go('kids')}>
-          <Icon name="star" size="1rem" fill="var(--amber)" />
-          {stars} of {goal}
-        </button>
-      </div>
-      <div className="w-fill">
-        {shown.length === 0 && <span className="sub">No routine yet</span>}
-        {shown.map((r) => {
-          const i = routine.indexOf(r);
-          const isDone = done.includes(r.id);
-          const isNow = i === currentIdx && !isDone;
-          return (
-            <button
-              key={r.id}
-              type="button"
-              aria-pressed={isDone}
-              onClick={() => toggleRoutine(r.id)}
-              className={`tl-row${isDone ? ' done' : ''}${isNow ? ' now' : ''}`}
-              style={{ border: 0, background: isNow ? undefined : 'transparent', color: 'inherit', textAlign: 'left', width: isNow ? 'calc(100% + 1.5rem)' : '100%' }}
-            >
-              <span className="tl-time">{split12(r.time).time}</span>
-              <span className="tl-dot" />
-              <span style={{ display: 'flex', flexDirection: 'column' }}>
-                <span className="tl-label">{r.label}</span>
-                {isNow && <span style={{ fontSize: '0.8rem', color: 'var(--text2)' }}>Now · tap when done</span>}
-              </span>
-            </button>
-          );
-        })}
       </div>
     </>
   );
@@ -418,7 +357,6 @@ const BODY: Record<WidgetType, (p: P) => ReactElement> = {
   weather: WeatherW,
   alarm: NextAlarm,
   menu: TodayMenu,
-  kids: KidsDay,
   photo: Photo,
   chores: Chores,
   note: Note,
@@ -429,5 +367,5 @@ const BODY: Record<WidgetType, (p: P) => ReactElement> = {
 
 export function WidgetBody(p: P) {
   const C = BODY[p.widget.type];
-  return <C {...p} />;
+  return C ? <C {...p} /> : null;
 }

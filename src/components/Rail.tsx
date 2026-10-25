@@ -4,7 +4,6 @@ import { Icon } from './Icon';
 
 const NAV: { id: Screen; label: string; icon: string }[] = [
   { id: 'home', label: 'Home', icon: 'home' },
-  { id: 'kids', label: 'Kids', icon: 'star' },
   { id: 'menu', label: 'Menu', icon: 'menu' },
   { id: 'alarms', label: 'Alarms', icon: 'alarm' },
 ];

@@ -50,7 +50,7 @@ export interface FieldDef<T> {
   placeholder?: string;
 }
 
-/** A dialog for editing a list of simple records (chores, events, routine…). */
+/** A dialog for editing a list of simple records (chores, events, reminders…). */
 export function ListDialog<T extends { id: string }>({
   title,
   sub,

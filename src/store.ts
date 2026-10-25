@@ -8,7 +8,6 @@ import type {
   Dish,
   Meal,
   Reminder,
-  RoutineItem,
   Screen,
   Settings,
   ShopItem,
@@ -29,9 +28,6 @@ export interface AppState {
   chores: Chore[];
   shopping: ShopItem[];
   alarms: Alarm[];
-  routine: RoutineItem[];
-  /** date key -> routine item ids done that day */
-  routineDone: Record<string, string[]>;
   reminders: Reminder[];
   events: CalEvent[];
   /** the dishes the family cooks, one list per meal */
@@ -121,9 +117,6 @@ export const defaultState = (): Omit<AppState, 'screen' | 'ringing' | 'snoozes' 
     nightStart: '19:00',
     location: null,
     members: ['Mom', 'Dad', 'Kid', 'All'],
-    kidName: 'Kid',
-    starGoal: 5,
-    reward: 'Park on Sunday',
     mealTimes: { breakfast: '07:30', lunch: '13:00', snack: '16:30', dinner: '20:00' },
     keepAwake: true,
     homeTimeoutMin: 2,
@@ -133,7 +126,7 @@ export const defaultState = (): Omit<AppState, 'screen' | 'ringing' | 'snoozes' 
     { id: uid(), type: 'weather', w: 1, h: 1 },
     { id: uid(), type: 'alarm', w: 2, h: 1 },
     { id: uid(), type: 'menu', w: 2, h: 2 },
-    { id: uid(), type: 'kids', w: 2, h: 2 },
+    { id: uid(), type: 'calendar', w: 2, h: 2 },
     { id: uid(), type: 'photo', w: 2, h: 2, config: { photoIds: [], interval: 30 } },
     { id: uid(), type: 'chores', w: 4, h: 1 },
     {
@@ -159,17 +152,6 @@ export const defaultState = (): Omit<AppState, 'screen' | 'ringing' | 'snoozes' 
     { id: uid(), time: '19:30', label: 'Story time', days: [0, 1, 2, 3, 4, 5, 6], who: 'Kid', on: true, note: '' },
     { id: uid(), time: '21:30', label: 'Lights out', days: [0, 1, 2, 3, 4, 5, 6], who: 'All', on: true, note: '' },
   ],
-  routine: [
-    { id: uid(), time: '06:45', label: 'Wake up and make bed' },
-    { id: uid(), time: '07:00', label: 'Brush and bath' },
-    { id: uid(), time: '07:20', label: 'Finish breakfast' },
-    { id: uid(), time: '07:40', label: 'Catch the school bus' },
-    { id: uid(), time: '16:30', label: 'Snack and play outside' },
-    { id: uid(), time: '17:30', label: 'Drawing class' },
-    { id: uid(), time: '18:30', label: 'Homework' },
-    { id: uid(), time: '20:30', label: 'Story and bedtime' },
-  ],
-  routineDone: {},
   reminders: [
     { id: uid(), label: 'Water the plants', detail: 'Every day · 7:00 AM' },
     { id: uid(), label: 'Pay electricity bill', detail: 'Due on the 5th' },
@@ -194,13 +176,25 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'wall-tablet-v1',
-      version: 2,
+      version: 3,
       migrate: (persisted, version) => {
         const st = persisted as Record<string, unknown>;
         if (version < 2) {
           const old = st.menu as Record<Meal, string>[] | undefined;
           delete st.menu;
           Object.assign(st, old ? migrateOldMenu(old) : seedMenu(), { removedDishes: {} });
+        }
+        if (version < 3) {
+          // the Kids section was removed: drop its widget and data
+          delete st.routine;
+          delete st.routineDone;
+          st.widgets = ((st.widgets as { type: string }[] | undefined) ?? []).filter((w) => w.type !== 'kids');
+          const settings = st.settings as Record<string, unknown> | undefined;
+          if (settings) {
+            delete settings.kidName;
+            delete settings.starGoal;
+            delete settings.reward;
+          }
         }
         return st as unknown as AppState;
       },
@@ -231,19 +225,6 @@ export const updateWidgetConfig = (id: string, patch: Partial<WidgetConfig>) =>
 export const toggleChore = (id: string) => {
   const k = dateKey();
   set({ chores: get().chores.map((c) => (c.id === id ? { ...c, doneOn: c.doneOn === k ? undefined : k } : c)) });
-};
-
-export const toggleRoutine = (id: string) => {
-  const k = dateKey();
-  const done = get().routineDone[k] ?? [];
-  const next = done.includes(id) ? done.filter((x) => x !== id) : [...done, id];
-  // keep two weeks of history
-  const keep = Object.fromEntries(
-    Object.entries({ ...get().routineDone, [k]: next })
-      .sort(([a], [b]) => (a < b ? 1 : -1))
-      .slice(0, 14),
-  );
-  set({ routineDone: keep });
 };
 
 export const toggleShop = (id: string) =>

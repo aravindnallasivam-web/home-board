@@ -6,7 +6,6 @@ import { requestAlarmPermission, setupDisplay } from './services/native';
 import { unlockAudioOnFirstTouch } from './services/sound';
 import { Alarms } from './screens/Alarms';
 import { Home } from './screens/Home';
-import { Kids } from './screens/Kids';
 import { Menu } from './screens/Menu';
 import { Ringing } from './screens/Ringing';
 import { Settings } from './screens/Settings';
@@ -63,7 +62,6 @@ export default function App() {
     <div className="app">
       <Rail />
       {screen === 'home' && <Home />}
-      {screen === 'kids' && <Kids />}
       {screen === 'menu' && <Menu />}
       {screen === 'alarms' && <Alarms />}
       {screen === 'settings' && <Settings />}

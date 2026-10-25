@@ -1,12 +1,11 @@
 export type ThemeMode = 'auto' | 'light' | 'dark';
-export type Screen = 'home' | 'kids' | 'menu' | 'alarms' | 'settings';
+export type Screen = 'home' | 'menu' | 'alarms' | 'settings';
 
 export type WidgetType =
   | 'clock'
   | 'weather'
   | 'alarm'
   | 'menu'
-  | 'kids'
   | 'photo'
   | 'chores'
   | 'note'
@@ -61,12 +60,6 @@ export interface Alarm {
   note: string;
 }
 
-export interface RoutineItem {
-  id: string;
-  time: string;
-  label: string;
-}
-
 export interface Reminder {
   id: string;
   label: string;
@@ -105,9 +98,6 @@ export interface Settings {
   nightStart: string;
   location: Location | null;
   members: string[];
-  kidName: string;
-  starGoal: number;
-  reward: string;
   mealTimes: Record<Meal, string>;
   keepAwake: boolean;
   homeTimeoutMin: number;

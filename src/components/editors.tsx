@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { deletePhoto, savePhoto, usePhotoUrl } from '../services/photos';
 import { deleteAlarm, saveAlarm, updateWidgetConfig, useStore } from '../store';
-import type { Alarm, CalEvent, Chore, Reminder, RoutineItem, ShopItem, Widget } from '../types';
+import type { Alarm, CalEvent, Chore, Reminder, ShopItem, Widget } from '../types';
 import { DAY_SHORT, dateKey, uid } from '../util';
 import { Dialog, ListDialog } from './Dialog';
 import { Icon } from './Icon';
@@ -59,26 +59,6 @@ export function EventsDialog({ onClose }: Close) {
       addLabel="Add event"
       sortBy={(a, b) => (a.date + a.time < b.date + b.time ? -1 : 1)}
       onSave={(events) => useStore.setState({ events })}
-      onClose={onClose}
-    />
-  );
-}
-
-export function RoutineDialog({ onClose }: Close) {
-  const routine = useStore((s) => s.routine);
-  return (
-    <ListDialog<RoutineItem>
-      title="Daily routine"
-      sub="Each finished item earns a star."
-      items={routine}
-      fields={[
-        { key: 'label', label: 'Activity', flex: 3, placeholder: 'e.g. Homework' },
-        { key: 'time', label: 'Time', type: 'time', flex: 1.4 },
-      ]}
-      newItem={() => ({ id: uid(), label: '', time: '17:00' })}
-      addLabel="Add activity"
-      sortBy={(a, b) => (a.time < b.time ? -1 : 1)}
-      onSave={(routine) => useStore.setState({ routine })}
       onClose={onClose}
     />
   );

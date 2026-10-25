@@ -1,6 +1,6 @@
 # Home Board
 
-A wall-mounted Android tablet dashboard for the household: a widget board you can rearrange and resize, the kid's routine with stars, the weekly menu with a shopping list, alarms that ring full-screen, and household reminders. Light, dark and automatic day/night themes.
+A wall-mounted Android tablet dashboard for the household: a widget board you can rearrange and resize, the weekly menu with a shopping list, alarms that ring full-screen, and household reminders. Light, dark and automatic day/night themes.
 
 Built as a React + Vite web app inside a native Android shell (Capacitor).
 
@@ -16,13 +16,13 @@ Every push to `main` builds the APK on GitHub Actions:
 
 1. Open **Home Board** and allow notifications (so alarms ring even if the app is closed).
 2. **Settings › Weather location**: search for your town.
-3. **Settings › Family**: family members, kid's name, star reward.
+3. **Settings › Family**: family members.
 4. Make it the wall display: **Android Settings › Apps › Default apps › Home app › Home Board**. It then starts on boot and the Home button always returns to the board. (Or use Android *screen pinning*.)
 5. On Android 12+, if Settings shows **Allow exact alarms**, tap it so alarms ring on the minute.
 
 ## Using it
 
-- **Rearrange the board**: long-press anywhere on the board, or tap **Edit** in the side rail. Drag a widget onto another to move it, drag the amber corner to resize, or tap a widget for move/size/remove buttons. **Add widget** opens the gallery: clock, weather, next alarm, today's menu, kid's day, photo frame (add as many as you like), chores, family note, calendar, countdown, shopping list.
+- **Rearrange the board**: long-press anywhere on the board, or tap **Edit** in the side rail. Drag a widget onto another to move it, drag the amber corner to resize, or tap a widget for move/size/remove buttons. **Add widget** opens the gallery: clock, weather, next alarm, today's menu, photo frame (add as many as you like), chores, family note, calendar, countdown, shopping list.
 - **Change what a widget shows**: tap its pencil.
 - **Menu**: *Dish lists* keeps a separate list for breakfast, lunch, snack and dinner. *Plan* shows real dates, a week at a time; tap a meal to pick dishes from that meal's list, or type a new dish and tap *Add* to put it on the list and the plan in one go.
 - **Theme**: the rail button cycles Auto → Light → Dark. Auto switches at the times set in Settings.
